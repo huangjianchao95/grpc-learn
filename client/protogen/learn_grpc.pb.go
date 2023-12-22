@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	LearnService_Hello_FullMethodName = "/LearnService/Hello"
-	LearnService_Add_FullMethodName   = "/LearnService/Add"
+	LearnService_Hello_FullMethodName      = "/LearnService/Hello"
+	LearnService_Add_FullMethodName        = "/LearnService/Add"
+	LearnService_StockPrice_FullMethodName = "/LearnService/StockPrice"
 )
 
 // LearnServiceClient is the client API for LearnService service.
@@ -29,6 +30,7 @@ const (
 type LearnServiceClient interface {
 	Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	Add(ctx context.Context, opts ...grpc.CallOption) (LearnService_AddClient, error)
+	StockPrice(ctx context.Context, in *StockRequest, opts ...grpc.CallOption) (LearnService_StockPriceClient, error)
 }
 
 type learnServiceClient struct {
@@ -82,12 +84,45 @@ func (x *learnServiceAddClient) CloseAndRecv() (*AddResponse, error) {
 	return m, nil
 }
 
+func (c *learnServiceClient) StockPrice(ctx context.Context, in *StockRequest, opts ...grpc.CallOption) (LearnService_StockPriceClient, error) {
+	stream, err := c.cc.NewStream(ctx, &LearnService_ServiceDesc.Streams[1], LearnService_StockPrice_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &learnServiceStockPriceClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type LearnService_StockPriceClient interface {
+	Recv() (*StockResponse, error)
+	grpc.ClientStream
+}
+
+type learnServiceStockPriceClient struct {
+	grpc.ClientStream
+}
+
+func (x *learnServiceStockPriceClient) Recv() (*StockResponse, error) {
+	m := new(StockResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LearnServiceServer is the server API for LearnService service.
 // All implementations must embed UnimplementedLearnServiceServer
 // for forward compatibility
 type LearnServiceServer interface {
 	Hello(context.Context, *HelloRequest) (*HelloResponse, error)
 	Add(LearnService_AddServer) error
+	StockPrice(*StockRequest, LearnService_StockPriceServer) error
 	mustEmbedUnimplementedLearnServiceServer()
 }
 
@@ -100,6 +135,9 @@ func (UnimplementedLearnServiceServer) Hello(context.Context, *HelloRequest) (*H
 }
 func (UnimplementedLearnServiceServer) Add(LearnService_AddServer) error {
 	return status.Errorf(codes.Unimplemented, "method Add not implemented")
+}
+func (UnimplementedLearnServiceServer) StockPrice(*StockRequest, LearnService_StockPriceServer) error {
+	return status.Errorf(codes.Unimplemented, "method StockPrice not implemented")
 }
 func (UnimplementedLearnServiceServer) mustEmbedUnimplementedLearnServiceServer() {}
 
@@ -158,6 +196,27 @@ func (x *learnServiceAddServer) Recv() (*AddRequest, error) {
 	return m, nil
 }
 
+func _LearnService_StockPrice_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StockRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(LearnServiceServer).StockPrice(m, &learnServiceStockPriceServer{stream})
+}
+
+type LearnService_StockPriceServer interface {
+	Send(*StockResponse) error
+	grpc.ServerStream
+}
+
+type learnServiceStockPriceServer struct {
+	grpc.ServerStream
+}
+
+func (x *learnServiceStockPriceServer) Send(m *StockResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // LearnService_ServiceDesc is the grpc.ServiceDesc for LearnService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -175,6 +234,11 @@ var LearnService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Add",
 			Handler:       _LearnService_Add_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "StockPrice",
+			Handler:       _LearnService_StockPrice_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "learn.proto",

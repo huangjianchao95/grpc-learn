@@ -16,7 +16,16 @@ message AddResponse {
   int32 sum = 1;
 }
 
+message StockRequest {
+  int32 stockId = 1;
+}
+
+message StockResponse {
+  int32 price = 1;
+}
+
 service LearnService {
   rpc Hello(HelloRequest) returns (HelloResponse);
   rpc Add(stream AddRequest) returns (AddResponse);
+  rpc StockPrice(StockRequest) returns (stream StockResponse);
 }

@@ -4,12 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"google.golang.org/grpc"
 	"io"
 	"log"
+	"math/rand"
 	"net"
+	"time"
 
 	pb "github.com/huangjianchao95/grpc-learn/server/protogen"
+
+	"google.golang.org/grpc"
 )
 
 var (
@@ -45,6 +48,23 @@ func (server *server) Add(stream pb.LearnService_AddServer) error {
 			res.Sum += num
 		}
 	}
+}
+
+func (server *server) StockPrice(req *pb.StockRequest, stream pb.LearnService_StockPriceServer) error {
+	log.Println("StockPrice, stockId: ", req.StockId)
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	for i := 1; i <= 10; i++ {
+		res := &pb.StockResponse{
+			Price: r.Int31n(10000),
+		}
+		if err := stream.Send(res); err != nil {
+			log.Println("StockPrice send error: ", err)
+			return err
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return nil
 }
 
 func main() {

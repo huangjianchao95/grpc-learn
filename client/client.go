@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	pb "github.com/huangjianchao95/grpc-learn/client/protogen"
+	"io"
 	"log"
 	"time"
+
+	pb "github.com/huangjianchao95/grpc-learn/client/protogen"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -55,6 +57,28 @@ func clientStreamRpc(conn *grpc.ClientConn) {
 
 }
 
+func serverStreamRpc(conn *grpc.ClientConn) {
+	client := pb.NewLearnServiceClient(conn)
+	ctx := context.Background()
+	req := &pb.StockRequest{
+		StockId: 1,
+	}
+	stream, err := client.StockPrice(ctx, req)
+	if err != nil {
+		log.Fatalln("StockPrice stream err: ", err)
+	}
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalln("failed to receive stock price: ", err)
+		}
+		log.Printf("stock price, id: %d, price: %d\n", req.StockId, res.Price)
+	}
+}
+
 func main() {
 	flag.Parse()
 	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -64,4 +88,5 @@ func main() {
 	defer conn.Close()
 	unaryRpc(conn)
 	clientStreamRpc(conn)
+	serverStreamRpc(conn)
 }
