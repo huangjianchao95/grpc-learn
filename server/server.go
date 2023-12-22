@@ -67,6 +67,24 @@ func (server *server) StockPrice(req *pb.StockRequest, stream pb.LearnService_St
 	return nil
 }
 
+func (server *server) Chat(stream pb.LearnService_ChatServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		res := &pb.ChatResponse{
+			Msg: fmt.Sprintf("I received msg, %s!", req.Msg),
+		}
+		if err := stream.Send(res); err != nil {
+			return err
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", *port)

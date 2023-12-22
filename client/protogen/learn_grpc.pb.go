@@ -22,6 +22,7 @@ const (
 	LearnService_Hello_FullMethodName      = "/LearnService/Hello"
 	LearnService_Add_FullMethodName        = "/LearnService/Add"
 	LearnService_StockPrice_FullMethodName = "/LearnService/StockPrice"
+	LearnService_Chat_FullMethodName       = "/LearnService/Chat"
 )
 
 // LearnServiceClient is the client API for LearnService service.
@@ -31,6 +32,7 @@ type LearnServiceClient interface {
 	Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	Add(ctx context.Context, opts ...grpc.CallOption) (LearnService_AddClient, error)
 	StockPrice(ctx context.Context, in *StockRequest, opts ...grpc.CallOption) (LearnService_StockPriceClient, error)
+	Chat(ctx context.Context, opts ...grpc.CallOption) (LearnService_ChatClient, error)
 }
 
 type learnServiceClient struct {
@@ -116,6 +118,37 @@ func (x *learnServiceStockPriceClient) Recv() (*StockResponse, error) {
 	return m, nil
 }
 
+func (c *learnServiceClient) Chat(ctx context.Context, opts ...grpc.CallOption) (LearnService_ChatClient, error) {
+	stream, err := c.cc.NewStream(ctx, &LearnService_ServiceDesc.Streams[2], LearnService_Chat_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &learnServiceChatClient{stream}
+	return x, nil
+}
+
+type LearnService_ChatClient interface {
+	Send(*ChatRequest) error
+	Recv() (*ChatResponse, error)
+	grpc.ClientStream
+}
+
+type learnServiceChatClient struct {
+	grpc.ClientStream
+}
+
+func (x *learnServiceChatClient) Send(m *ChatRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *learnServiceChatClient) Recv() (*ChatResponse, error) {
+	m := new(ChatResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LearnServiceServer is the server API for LearnService service.
 // All implementations must embed UnimplementedLearnServiceServer
 // for forward compatibility
@@ -123,6 +156,7 @@ type LearnServiceServer interface {
 	Hello(context.Context, *HelloRequest) (*HelloResponse, error)
 	Add(LearnService_AddServer) error
 	StockPrice(*StockRequest, LearnService_StockPriceServer) error
+	Chat(LearnService_ChatServer) error
 	mustEmbedUnimplementedLearnServiceServer()
 }
 
@@ -138,6 +172,9 @@ func (UnimplementedLearnServiceServer) Add(LearnService_AddServer) error {
 }
 func (UnimplementedLearnServiceServer) StockPrice(*StockRequest, LearnService_StockPriceServer) error {
 	return status.Errorf(codes.Unimplemented, "method StockPrice not implemented")
+}
+func (UnimplementedLearnServiceServer) Chat(LearnService_ChatServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
 }
 func (UnimplementedLearnServiceServer) mustEmbedUnimplementedLearnServiceServer() {}
 
@@ -217,6 +254,32 @@ func (x *learnServiceStockPriceServer) Send(m *StockResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _LearnService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LearnServiceServer).Chat(&learnServiceChatServer{stream})
+}
+
+type LearnService_ChatServer interface {
+	Send(*ChatResponse) error
+	Recv() (*ChatRequest, error)
+	grpc.ServerStream
+}
+
+type learnServiceChatServer struct {
+	grpc.ServerStream
+}
+
+func (x *learnServiceChatServer) Send(m *ChatResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *learnServiceChatServer) Recv() (*ChatRequest, error) {
+	m := new(ChatRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LearnService_ServiceDesc is the grpc.ServiceDesc for LearnService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -239,6 +302,12 @@ var LearnService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "StockPrice",
 			Handler:       _LearnService_StockPrice_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "Chat",
+			Handler:       _LearnService_Chat_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "learn.proto",

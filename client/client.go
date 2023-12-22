@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"time"
@@ -79,6 +80,41 @@ func serverStreamRpc(conn *grpc.ClientConn) {
 	}
 }
 
+func streamRpc(conn *grpc.ClientConn) {
+	client := pb.NewLearnServiceClient(conn)
+	waitCh := make(chan struct{})
+
+	stream, err := client.Chat(context.Background())
+	if err != nil {
+		log.Fatalln("chat open stream err: ", err)
+	}
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(waitCh)
+				break
+			}
+			if err != nil {
+				log.Fatalln("receive err: ", err)
+			}
+			log.Println("chat got message: ", res.Msg)
+		}
+	}()
+	for i := 1; i <= 10; i++ {
+		req := &pb.ChatRequest{
+			Msg: fmt.Sprintf("chat num %d", i),
+		}
+		if err := stream.Send(req); err != nil {
+			log.Fatalln("chat send err: ", err)
+		}
+		log.Println("send msg: ", req.Msg)
+		time.Sleep(100 * time.Millisecond)
+	}
+	stream.CloseSend()
+	<-waitCh
+}
+
 func main() {
 	flag.Parse()
 	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -89,4 +125,5 @@ func main() {
 	unaryRpc(conn)
 	clientStreamRpc(conn)
 	serverStreamRpc(conn)
+	streamRpc(conn)
 }

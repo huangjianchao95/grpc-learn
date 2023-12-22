@@ -24,8 +24,17 @@ message StockResponse {
   int32 price = 1;
 }
 
+message ChatRequest {
+  string msg = 1;
+}
+
+message ChatResponse {
+  string msg = 1;
+}
+
 service LearnService {
   rpc Hello(HelloRequest) returns (HelloResponse);
   rpc Add(stream AddRequest) returns (AddResponse);
   rpc StockPrice(StockRequest) returns (stream StockResponse);
+  rpc Chat(stream ChatRequest) returns (stream ChatResponse);
 }
