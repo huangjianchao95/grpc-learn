@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	LearnService_Hello_FullMethodName = "/LearnService/Hello"
+	LearnService_Add_FullMethodName   = "/LearnService/Add"
 )
 
 // LearnServiceClient is the client API for LearnService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LearnServiceClient interface {
 	Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	Add(ctx context.Context, opts ...grpc.CallOption) (LearnService_AddClient, error)
 }
 
 type learnServiceClient struct {
@@ -46,11 +48,46 @@ func (c *learnServiceClient) Hello(ctx context.Context, in *HelloRequest, opts .
 	return out, nil
 }
 
+func (c *learnServiceClient) Add(ctx context.Context, opts ...grpc.CallOption) (LearnService_AddClient, error) {
+	stream, err := c.cc.NewStream(ctx, &LearnService_ServiceDesc.Streams[0], LearnService_Add_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &learnServiceAddClient{stream}
+	return x, nil
+}
+
+type LearnService_AddClient interface {
+	Send(*AddRequest) error
+	CloseAndRecv() (*AddResponse, error)
+	grpc.ClientStream
+}
+
+type learnServiceAddClient struct {
+	grpc.ClientStream
+}
+
+func (x *learnServiceAddClient) Send(m *AddRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *learnServiceAddClient) CloseAndRecv() (*AddResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(AddResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LearnServiceServer is the server API for LearnService service.
 // All implementations must embed UnimplementedLearnServiceServer
 // for forward compatibility
 type LearnServiceServer interface {
 	Hello(context.Context, *HelloRequest) (*HelloResponse, error)
+	Add(LearnService_AddServer) error
 	mustEmbedUnimplementedLearnServiceServer()
 }
 
@@ -60,6 +97,9 @@ type UnimplementedLearnServiceServer struct {
 
 func (UnimplementedLearnServiceServer) Hello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Hello not implemented")
+}
+func (UnimplementedLearnServiceServer) Add(LearnService_AddServer) error {
+	return status.Errorf(codes.Unimplemented, "method Add not implemented")
 }
 func (UnimplementedLearnServiceServer) mustEmbedUnimplementedLearnServiceServer() {}
 
@@ -92,6 +132,32 @@ func _LearnService_Hello_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LearnService_Add_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LearnServiceServer).Add(&learnServiceAddServer{stream})
+}
+
+type LearnService_AddServer interface {
+	SendAndClose(*AddResponse) error
+	Recv() (*AddRequest, error)
+	grpc.ServerStream
+}
+
+type learnServiceAddServer struct {
+	grpc.ServerStream
+}
+
+func (x *learnServiceAddServer) SendAndClose(m *AddResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *learnServiceAddServer) Recv() (*AddRequest, error) {
+	m := new(AddRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LearnService_ServiceDesc is the grpc.ServiceDesc for LearnService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +170,12 @@ var LearnService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LearnService_Hello_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Add",
+			Handler:       _LearnService_Add_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "learn.proto",
 }

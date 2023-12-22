@@ -8,6 +8,15 @@ message HelloResponse {
   string msg = 1;
 }
 
+message AddRequest {
+  repeated int32 nums = 1;
+}
+
+message AddResponse {
+  int32 sum = 1;
+}
+
 service LearnService {
   rpc Hello(HelloRequest) returns (HelloResponse);
+  rpc Add(stream AddRequest) returns (AddResponse);
 }

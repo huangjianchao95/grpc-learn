@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 	"net"
 
@@ -25,6 +26,25 @@ func (server *server) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 	}
 
 	return res, nil
+}
+
+func (server *server) Add(stream pb.LearnService_AddServer) error {
+	res := &pb.AddResponse{
+		Sum: 0,
+	}
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(res)
+		}
+		if err != nil {
+			log.Println("rpc server, Add error: ", err)
+			return err
+		}
+		for _, num := range req.Nums {
+			res.Sum += num
+		}
+	}
 }
 
 func main() {
