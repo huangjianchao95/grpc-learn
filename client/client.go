@@ -101,7 +101,7 @@ func streamRpc(conn *grpc.ClientConn) {
 			log.Println("chat got message: ", res.Msg)
 		}
 	}()
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 3; i++ {
 		req := &pb.ChatRequest{
 			Msg: fmt.Sprintf("chat num %d", i),
 		}

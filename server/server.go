@@ -15,6 +15,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
 var (
 	port = flag.String("port", ":9999", "The server port")
 )
@@ -52,11 +56,9 @@ func (server *server) Add(stream pb.LearnService_AddServer) error {
 
 func (server *server) StockPrice(req *pb.StockRequest, stream pb.LearnService_StockPriceServer) error {
 	log.Println("StockPrice, stockId: ", req.StockId)
-	source := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(source)
 	for i := 1; i <= 10; i++ {
 		res := &pb.StockResponse{
-			Price: r.Int31n(10000),
+			Price: rand.Int31n(10000),
 		}
 		if err := stream.Send(res); err != nil {
 			log.Println("StockPrice send error: ", err)
